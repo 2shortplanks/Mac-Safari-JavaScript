@@ -51,12 +51,12 @@ compiles it, and executes it in order to control Safari.
 Runs the JavaScript in the first tab of the front window of the
 currently running Safari.
 
-Your code is automatically executed in a function to avoid namespace
-polution.
+Your code is automatically executed in a JavaScript function to
+avoid namespace polution.
 
 If you JavaScript returns something (via the C<return> keyword) then,
 as long as it can be represented by JSON, it will be returned as
-the result of this.
+the result the function call.
 
 =cut
 
