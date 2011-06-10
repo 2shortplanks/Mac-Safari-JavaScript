@@ -10,9 +10,12 @@ use warnings;
 use Mac::AppleScript qw(RunAppleScript);
 use JSON::XS qw(decode_json);
 use Encode qw(encode decode);
+use Carp qw(croak);
+
+use Mac::Safari::JavaScript::Exception;
 
 our @EXPORT_OK;
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 =head1 NAME
 
@@ -22,13 +25,13 @@ Mac::Safari::JavaScript - Run JavaScript in Safari on Mac OS X
 
   use Mac::Safarai::JavaScript qw(safari_js);
 
-  // do an alert
+  # do an alert
   safari_js 'alert("Hello Safari User")';
 
-  // return some value
+  # return some value
   var $arrayref = safari_js 'return [1,2,3]';
 
-  // multiple lines are okay
+  # multiple lines are okay
   safari_js <<'JAVASCRIPT';
     var fred = "bob";
     return fred;
@@ -42,38 +45,70 @@ browser on Mac OS X.
 The current implementation wraps the JavaScript in Applescript,
 compiles it, and executes it in order to control Safari.
 
-=head1 FUNCTION
+=head1 FUNCTIONS
+
+Functions are exported on request, or may be called fully qualified.
 
 =over
 
 =item safari_js($javascript)
 
 Runs the JavaScript in the first tab of the front window of the
-currently running Safari.
+currently running Safari.  
 
-Your code is automatically executed in a JavaScript function to
-avoid namespace polution.
+This script may safely contain newlines, unicode characters, comments etc.
+Any line numbers in error messages should match up.
 
-If you JavaScript returns something (via the C<return> keyword) then,
-as long as it can be represented by JSON, it will be returned as
-the result the function call.
+C<safari_js> will do a passable job of mapping whatever you returned from
+your JavaScript (using the C<return> keyword) into a Perl data structure it
+will return.  If you do not return a value from JavaScript (i.e. the return
+keyword is not executed) then C<safari_js> will return the empty list.  If
+you return nothing (i.e. use C<return;> in your script), C<safari_js> will
+return C<undef>.
+
+JavaScript data structures are mapped as you might expect:  Objects to
+hashrefs, Arrays to arrayrefs, strings and numbers to their normal scalar
+representation, and C<null>, C<true> and C<false> to C<undef>, C<1> and C<0>
+respectivly.  Please see L<JSON::XS> for more information.
+ 
+If what you pass causes an uncaught exception (including exceptions during
+by parsing your script) then a Mac::Safari::JavaScript::Exception
+exception object will be raised by C<safari_js>.  This will stringify
+to the exception you normally would see in your browser and can be
+integated for extra info such as the line number, etc.
 
 =cut
 
 sub safari_js($) {
   my $javascript = shift;
 
-  # wrap the javascript in helper functions so we always
-  # return a javascript string in order to be consistent
+  # we're going to put the javascript into a string to
+  # eval.  This means we need to escape all the meta chars
+  $javascript =~ s/\\/\\\\/gx;  # \ -> \\
+  $javascript =~ s/"/\\"/gx;    # " -> \"
+
+  # since we've now effectivly got a multiline string (and
+  # JavaScript doesn't support that) we better fix that up
+  # Note that we're trying not to mess up the line numers
+  # inside the eval of what we were passed
+  $javascript = join '\\n"+"',split /\n/x, $javascript;
+
+  # wrap the javascript in helper functions
+  #  
+  #  - use (function () { })() to avoid poluting the global namespace
+  #  - use eval "" to allow syntax errors to be caught and returned as a
+  #    data structure we can re-throw on the Perl side
+  #  - JSON.stringify(undefined) returns, not the string "null".  We detect
+  #    this and return the string "null"
+
   $javascript = <<"ENDOFJAVASCRIPT";
-  JSON.stringify((function () { $javascript; })());
+try{var result=eval("JSON.stringify((function(){ $javascript;throw'NothingReturned'})());");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch (e){ (e == "NothingReturned")?'{"noresult":1}':'{"error":'+JSON.stringify(e)+'}'; }
 ENDOFJAVASCRIPT
 
-  # escape the backslashes
-  $javascript =~ s/\\/\\\\/xg;
-
-  # escape the quotes
-  $javascript =~ s/"/\\"/xg;
+  # escape the string escapes again as we're going to pass
+  # the whole thing via Applescript now
+  $javascript =~ s/\\/\\\\/gx;     # \ -> \\
+  $javascript =~ s/"/\\"/gx;       # " -> \"
 
   # wrap it in applescript
   my $applescript = <<"ENDOFAPPLESCRIPT";
@@ -106,7 +141,13 @@ ENDOFAPPLESCRIPT
   # and decode this from json
   my $coder = JSON::XS->new;
   $coder->allow_nonref(1);
-  return $coder->decode($json);
+  my $ds = $coder->decode($json);
+
+  return undef if exists $ds->{undefined};
+  return if exists $ds->{noresult};
+  return $ds->{result} if exists $ds->{result};
+  croak(Mac::Safari::JavaScript::Exception->new(%{ $ds->{error} })) if exists $ds->{error};
+  croak("Unexpected error");
 }
 push @EXPORT_OK, "safari_js";
 
@@ -127,7 +168,7 @@ Bugs should be reported to me via the CPAN RT system. http://rt.cpan.org/NoAuth/
 
 =head1 SEE ALSO
 
-L<Mac::Applescript>
+L<Mac::Applescript>, L<Mac::Safari::JavaScript>
 
 =cut
 
