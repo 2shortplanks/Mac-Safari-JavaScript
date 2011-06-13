@@ -136,7 +136,7 @@ sub safari_js($;@) {
     my $value = $coder->encode(shift);
     $value =~ s/\\/\\\\/gx;  # \ -> \\
     $value =~ s/"/\\"/gx;    # " -> \"
-    
+
     $params{ $key } = $value;
   }
   my $args = join ",", keys %params;
