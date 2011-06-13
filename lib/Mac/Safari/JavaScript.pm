@@ -226,7 +226,7 @@ Bugs should be reported to me via the CPAN RT system. http://rt.cpan.org/NoAuth/
 
 =head1 SEE ALSO
 
-L<Mac::Applescript>, L<Mac::Safari::JavaScript>
+L<Mac::Applescript>, L<Mac::Safari::JavaScript::Exception>
 
 =cut
 
