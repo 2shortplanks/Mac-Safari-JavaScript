@@ -15,7 +15,7 @@ use Carp qw(croak);
 use Mac::Safari::JavaScript::Exception;
 
 our @EXPORT_OK;
-our $VERSION = "0.02";
+our $VERSION = "1.00";
 
 =head1 NAME
 
@@ -36,6 +36,9 @@ Mac::Safari::JavaScript - Run JavaScript in Safari on Mac OS X
     var fred = "bob";
     return fred;
   JAVASCRIPT
+  
+  # You can set variables to pass in
+  safari_js 'return document.getElementById(id).href', id => "mainlink";
 
 =head1 DESCRIPTION
 
@@ -51,13 +54,19 @@ Functions are exported on request, or may be called fully qualified.
 
 =over
 
-=item safari_js($javascript)
+=item safari_js($javascript, @named_parameters)
 
 Runs the JavaScript in the first tab of the front window of the
-currently running Safari.  
+currently running Safari.
+
+=over 8
+
+=item The script
 
 This script may safely contain newlines, unicode characters, comments etc.
-Any line numbers in error messages should match up.
+Any line numbers in error messages should match up with error messages
+
+=item Return value
 
 C<safari_js> will do a passable job of mapping whatever you returned from
 your JavaScript (using the C<return> keyword) into a Perl data structure it
@@ -66,21 +75,72 @@ keyword is not executed) then C<safari_js> will return the empty list.  If
 you return nothing (i.e. use C<return;> in your script), C<safari_js> will
 return C<undef>.
 
+Whatever you return from your JavaScript will be encoded into JSON with
+Safari's native C<JSON.stringify> function and decoded on the Perl side
+using the JSON::XS module.
+
 JavaScript data structures are mapped as you might expect:  Objects to
 hashrefs, Arrays to arrayrefs, strings and numbers to their normal scalar
-representation, and C<null>, C<true> and C<false> to C<undef>, C<1> and C<0>
-respectivly.  Please see L<JSON::XS> for more information.
- 
-If what you pass causes an uncaught exception (including exceptions during
-by parsing your script) then a Mac::Safari::JavaScript::Exception
-exception object will be raised by C<safari_js>.  This will stringify
-to the exception you normally would see in your browser and can be
-integated for extra info such as the line number, etc.
+representation, and C<null>, C<true> and C<false> to C<undef>, JSON::XS::true
+(which you can treat like the scalar C<1>) and JSON::XS::false (which you
+can treat like the scalar C<0>) respectivly.  Please see L<JSON::XS>
+for more information.
+
+You cannot return anything from JavaScript that has a ciruclar reference
+in it (as this cannot be represented by JSON.)
+
+=item Passing Parameters
+
+You may pass in named parameters by passing them as name/value pairs
+
+  safari_js $js_code_to_run, name1 => $value1, name2 => $value2, ...
+
+The parameters are simply availble as variables in your code.
+
+Internally parameters are converted from Perl data structures into JavaScript
+using JSON::XS using the reverse mapping described above.  You may not pass
+in circular data structures.  Again, see L<JSON::XS> for more infomation.
+
+=item Exception Handling
+
+If what you pass causes an uncaught exception within the Safari web browser
+(including exceptions during by parsing your script) then a
+Mac::Safari::JavaScript::Exception exception object will be raised by
+C<safari_js>.  This will stringify to the exception you normally would see
+in your browser and can be integated for extra info such as the line number,
+etc.
+
+=back
 
 =cut
 
-sub safari_js($) {
+sub safari_js($;@) {
   my $javascript = shift;
+
+  # create a coder objects
+  my $coder = JSON::XS->new;
+  $coder->allow_nonref(1);
+
+  # handle the arguments passed in
+  if (@_ % 2) {
+    croak "Uneven number of parameters passed to safari_js";
+  }
+  my %params;
+  while (@_) {
+    my $key = shift;
+    if (exists $params{ $key }) {
+      croak "Duplicate parameter '$key' passed twice to safari_js";
+    }
+    # we're going to put the value into a string to
+    # eval.  This means we need to escape all the meta chars
+    my $value = $coder->encode(shift);
+    $value =~ s/\\/\\\\/gx;  # \ -> \\
+    $value =~ s/"/\\"/gx;    # " -> \"
+    
+    $params{ $key } = $value;
+  }
+  my $args = join ",", keys %params;
+  my $values = join ",", values %params;
 
   # we're going to put the javascript into a string to
   # eval.  This means we need to escape all the meta chars
@@ -102,7 +162,7 @@ sub safari_js($) {
   #    this and return the string "null"
 
   $javascript = <<"ENDOFJAVASCRIPT";
-try{var result=eval("JSON.stringify((function(){ $javascript;throw'NothingReturned'})());");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch (e){ (e == "NothingReturned")?'{"noresult":1}':'{"error":'+JSON.stringify(e)+'}'; }
+try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch (e){ (e == "NothingReturned")?'{"noresult":1}':'{"error":'+JSON.stringify(e)+'}'; }
 ENDOFJAVASCRIPT
 
   # escape the string escapes again as we're going to pass
@@ -139,8 +199,6 @@ ENDOFAPPLESCRIPT
   $json =~ s/\\\\/\\/gx;
 
   # and decode this from json
-  my $coder = JSON::XS->new;
-  $coder->allow_nonref(1);
   my $ds = $coder->decode($json);
 
   return undef if exists $ds->{undefined};
