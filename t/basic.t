@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Mac::Safari::JavaScript qw(safari_js);
 use Scalar::Util qw(blessed);
 use Data::Dumper;
@@ -96,6 +96,10 @@ sub error_like (&$$) {
   }
   return ok(1, $description);
 }
+
+error_like {
+  safari_js "throw 'Bang'";
+} qr/\ABang\z/, "exact error";
 
 error_like {
   safari_js "++++";
