@@ -162,7 +162,7 @@ sub safari_js($;@) {
   #    this and return the string "null"
 
   $javascript = <<"ENDOFJAVASCRIPT";
-try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch (e){ (e == "NothingReturned")?'{"noresult":1}':'{"error":'+JSON.stringify(e)+'}'; }
+try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':'{"error":'+JSON.stringify(e)+',"errorName":"'+((typeof(e)=='object'&&e.name!=undefined)?e.name:'CustomError')+'" }'; }
 ENDOFJAVASCRIPT
 
   # escape the string escapes again as we're going to pass
@@ -204,7 +204,17 @@ ENDOFAPPLESCRIPT
   return undef if exists $ds->{undefined};
   return if exists $ds->{noresult};
   return $ds->{result} if exists $ds->{result};
-  croak(Mac::Safari::JavaScript::Exception->new(%{ $ds->{error} })) if exists $ds->{error};
+
+  # we've got an exception.  Croak differently depending on
+  # if we got a parse error type hash back or if we got something else
+  if (exists $ds->{error}) {
+#    use Data::Dumper;
+#    print Dumper $ds;
+    if ($ds->{errorName} ne "CustomError") {
+      croak(Mac::Safari::JavaScript::Exception->new(name => $ds->{errorName}, %{ $ds->{error} }));
+    }
+    croak(Mac::Safari::JavaScript::Exception->new( name => "CustomError", message => $ds->{error} ));
+  }
   croak("Unexpected error");
 }
 push @EXPORT_OK, "safari_js";
@@ -223,6 +233,8 @@ and/or modify it under the same terms as Perl itself.
 =head1 BUGS
 
 Bugs should be reported to me via the CPAN RT system. http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Mac::Safari::JavaScript
+
+Some pages (e.g. http://developer.apple.com/) cause array stringifcation to break.  I haven't worked out why yet.
 
 =head1 SEE ALSO
 

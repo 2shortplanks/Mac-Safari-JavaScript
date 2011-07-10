@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 21;
+use Test::More tests => 23;
 use Mac::Safari::JavaScript qw(safari_js);
 use Scalar::Util qw(blessed);
 use Data::Dumper;
@@ -84,27 +84,40 @@ like ($@, qr/Uneven number of parameters passed to safari_js/, "Uneven number of
 ########################################################################
 
 # testing exceptions
-sub error_like (&$$) {
+sub error_like (&$$$) {
   local $Test::Builder::Level = $Test::Builder::Level + 1;
   my $uboat = shift;
   my $re = shift;
+  my $type = shift;
   my $description = shift;
   eval { $uboat->() };
-  unless (defined($@) && blessed($@) && $@->isa("Mac::JavaScript::Safari::Exception") && "$@" =~ $re) {
+  my $error = $@;
+  if (defined($error) && blessed($error) && $error->isa("Mac::Safari::JavaScript::Exception") && $error =~ $re && $error->name eq $type) {
     ok(1, $description);
-    return 0;
+    return 1;
   }
-  return ok(1, $description);
+  ok(0, $description);
+  diag("Error class is @{[ ref $error ]})");
+  diag("Error is $error");
+  return 0;
 }
 
 error_like {
   safari_js "throw 'Bang'";
-} qr/\ABang\z/, "exact error";
+} qr/\ABang\z/, "CustomError", "exact error";
+
+error_like {
+  safari_js "throw {'foo':'bar','sourceID':'fish'}";
+} qr/HASH/, "CustomError", "exact error";
 
 error_like {
   safari_js "++++";
-} qr/Parse error/, "invalid js";
+} qr/Parse error/, "SyntaxError","invalid js";
 
 error_like {
   safari_js "{";
-} qr/Parse error/, "stray }";
+} qr/Parse error/, "SyntaxError","stray }";
+
+error_like {
+  safari_js "return new Array(-1)";
+} qr/Array size is not a small enough positive integer/, "RangeError", "browser thrown error that isn't a syntax error";

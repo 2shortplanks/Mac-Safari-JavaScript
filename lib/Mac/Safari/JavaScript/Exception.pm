@@ -19,6 +19,7 @@ sub new {
   return bless { @_ }, $class;
 }
 
+sub name     { return $_[0]->{name} }
 sub line     { return $_[0]->{line} }
 sub sourceId { return $_[0]->{sourceId} }  ## no critic (ProhibitMixedCaseSubs)
 sub message  { return $_[0]->{message} }
@@ -64,6 +65,32 @@ by Mac::Safari::JavaScript
 The following read only accessors are avalible
 
 =over
+
+=item name
+
+The type of the error.  This can be one of the following:
+
+=over 8
+
+=item CustomError
+
+=item EvalError
+
+=item RangeError
+
+=item ReferenceError
+
+=item SyntaxError
+
+=item TypeError
+
+=item URIError
+
+=back
+
+The name C<CustomError> will be used for any error thrown with the C<throw> keyword
+by you in your code.  Other error codes are assigned by Safari based on the type of
+exception that occurs.
 
 =item message
 
