@@ -78,10 +78,7 @@ The following read only accessors are avalible
 
 =item error
 
-The original error object, if the object can be transported
-over JSON (i.e. it does not contain undefined).
-
-If the object cannot be transported, it is ommited.
+The original error object.
 
 =item name
 
@@ -111,9 +108,9 @@ exception that occurs.
 
 =item message
 
-The string describing the error.
-
-This value will not be set if you throw
+The string describing the error as set by the browser.  This value
+will B<not> be set if you simply throw a string (the string will
+be contained in the C<error> accessor)
 
 =item line
 
