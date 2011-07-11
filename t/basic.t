@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 27;
+use Test::More tests => 28;
 use Mac::Safari::JavaScript qw(safari_js);
 use Scalar::Util qw(blessed);
 use Data::Dumper;
@@ -111,6 +111,8 @@ is($error, "Bang");
 $error = error_check {
   safari_js "throw {'foo':'bar','sourceID':'fish'}";
 } "CustomError", "exact error";
+is($error->line, 1)
+  or diag Dumper $error;
 
 $error = error_check {
   safari_js "++++";

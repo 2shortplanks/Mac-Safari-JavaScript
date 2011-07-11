@@ -162,7 +162,7 @@ sub safari_js($;@) {
   #    this and return the string "null"
 
   $javascript = <<"ENDOFJAVASCRIPT";
-try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':(function(){ var r={error:e,name:'CustomError'};var v=['name',"message","sourceId","sourceURL"];for(var i=0;i<v.length;i++)if(e[v[i]]!=undefined)r[v[i]]=e[v[i]];console.log(r);return JSON.stringify(r);})(); }
+try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':(function(){ var r={error:e,name:'CustomError'};var v=['name',"line","message","sourceId","sourceURL"];for(var i=0;i<v.length;i++)if(e[v[i]]!=undefined)r[v[i]]=e[v[i]];console.log(r);return JSON.stringify(r);})(); }
 ENDOFJAVASCRIPT
 
   # escape the string escapes again as we're going to pass
