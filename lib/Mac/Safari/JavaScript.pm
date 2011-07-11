@@ -15,7 +15,7 @@ use Carp qw(croak);
 use Mac::Safari::JavaScript::Exception;
 
 our @EXPORT_OK;
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 =head1 NAME
 
