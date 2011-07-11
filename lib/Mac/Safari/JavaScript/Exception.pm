@@ -27,6 +27,10 @@ sub line     { return $_[0]->{line}     }
 sub sourceId { return $_[0]->{sourceId} }  ## no critic (ProhibitMixedCaseSubs)
 sub message  { return $_[0]->{message}  }
 sub error    { return $_[0]->{error}    }
+sub expressionBeginOffset                  ## no critic (ProhibitMixedCaseSubs)
+             { return $_[0]->{expressionBeginOffset} }
+sub expressionEndOffset                    ## no critic (ProhibitMixedCaseSubs)
+             { return $_[0]->{expressionEndOffset} }
 
 sub to_string { return exists $_[0]->{message} ? $_[0]->{message} : $_[0]->{error}; }
 
@@ -71,6 +75,13 @@ by Mac::Safari::JavaScript
 The following read only accessors are avalible
 
 =over
+
+=item error
+
+The original error object, if the object can be transported
+over JSON (i.e. it does not contain undefined).
+
+If the object cannot be transported, it is ommited.
 
 =item name
 
