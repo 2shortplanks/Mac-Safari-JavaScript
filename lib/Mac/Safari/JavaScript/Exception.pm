@@ -6,9 +6,12 @@ use 5.008;
 use strict;
 use warnings;
 
-use overload '""' => "message";
+our $VERSION = "0.03";
 
-our $VERSION = "0.02";
+# overload stringification, but also overload boolean evalulation so
+# if the string form of this exception is the empty string, this still
+# has a true value
+use overload '""' => "to_string", bool => sub { 1 }, fallback => 1;
 
 # this is super lightweight.  I'd feel more comfortable writing this in moose,
 # as that would give us nice error checking, but that's too much dependancy
@@ -19,10 +22,13 @@ sub new {
   return bless { @_ }, $class;
 }
 
-sub name     { return $_[0]->{name} }
-sub line     { return $_[0]->{line} }
+sub name     { return $_[0]->{name}     }
+sub line     { return $_[0]->{line}     }
 sub sourceId { return $_[0]->{sourceId} }  ## no critic (ProhibitMixedCaseSubs)
-sub message  { return $_[0]->{message} }
+sub message  { return $_[0]->{message}  }
+sub error    { return $_[0]->{error}    }
+
+sub to_string { return exists $_[0]->{message} ? $_[0]->{message} : $_[0]->{error}; }
 
 1;
 
@@ -48,7 +54,7 @@ Mac::Safari::JavaScript::Exception - exception class to represent JS errors
 
 Error class for errors originating from Mac::Safari::JavaScript.
 
-=head2 Constructor
+=head2 Constructors
 
 =over
 
@@ -94,11 +100,16 @@ exception that occurs.
 
 =item message
 
-The string describing the error
+The string describing the error.
+
+This value will not be set if you throw
 
 =item line
 
-The line number the error occured on
+The line number the error occured on.
+
+This is only set for browser raised errors
+or if you throw an exception object.  Throwing a string will not 
 
 =item sourceId
 
@@ -106,7 +117,21 @@ The unique identifier for the originating source of the error.
 
 (The odd case for this accessor matches the odd case that Safari itself uses)
 
+=item 
+
 =back
+
+=head2 Methods
+
+=over
+
+=item to_string
+
+The stringiftication of this error.
+
+This method is automatically called if you use this object in a string context.
+
+=cut
 
 =head1 AUTHOR
 

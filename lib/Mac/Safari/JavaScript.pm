@@ -162,7 +162,7 @@ sub safari_js($;@) {
   #    this and return the string "null"
 
   $javascript = <<"ENDOFJAVASCRIPT";
-try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':'{"error":'+JSON.stringify(e)+',"errorName":"'+((typeof(e)=='object'&&e.name!=undefined)?e.name:'CustomError')+'" }'; }
+try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':(function(){ var r={error:e,name:'CustomError'};var v=['name',"message","sourceId","sourceURL"];for(var i=0;i<v.length;i++)if(e[v[i]]!=undefined)r[v[i]]=e[v[i]];console.log(r);return JSON.stringify(r);})(); }
 ENDOFJAVASCRIPT
 
   # escape the string escapes again as we're going to pass
@@ -201,20 +201,14 @@ ENDOFAPPLESCRIPT
   # and decode this from json
   my $ds = $coder->decode($json);
 
-  return undef if exists $ds->{undefined};
-  return if exists $ds->{noresult};
-  return $ds->{result} if exists $ds->{result};
-
-  # we've got an exception.  Croak differently depending on
-  # if we got a parse error type hash back or if we got something else
-  if (exists $ds->{error}) {
-#    use Data::Dumper;
-#    print Dumper $ds;
-    if ($ds->{errorName} ne "CustomError") {
-      croak(Mac::Safari::JavaScript::Exception->new(name => $ds->{errorName}, %{ $ds->{error} }));
-    }
-    croak(Mac::Safari::JavaScript::Exception->new( name => "CustomError", message => $ds->{error} ));
-  }
+  return undef
+    if exists $ds->{undefined};
+  return
+    if exists $ds->{noresult};
+  return $ds->{result}
+    if exists $ds->{result};
+  croak(Mac::Safari::JavaScript::Exception->new(%{ $ds }))
+    if exists $ds->{error};
   croak("Unexpected error");
 }
 push @EXPORT_OK, "safari_js";
