@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 28;
+use Test::More tests => 36;
 use Mac::Safari::JavaScript qw(safari_js);
 use Scalar::Util qw(blessed);
 use Data::Dumper;
@@ -105,26 +105,44 @@ my $error;
 
 $error = error_check {
   safari_js "throw 'Bang'";
-} "CustomError", "exact error";
-is($error, "Bang");
+} "CustomError", "string error";
+is($error, "Bang","...stringifies to that error");
 
 $error = error_check {
-  safari_js "throw {'foo':'bar','sourceID':'fish'}";
-} "CustomError", "exact error";
-is($error->line, 1)
+  safari_js "throw ''";
+} "CustomError", "empty error";
+ok($error, "...is still a true error");
+is($error, "", "...stringifies to the empty string");
+
+$error = error_check { safari_js <<'ENDOFJAVASCRIPT'; } "CustomError", "object error";
+// this is a comment
+throw {'foo':'bar','sourceID':'fish'};
+ENDOFJAVASCRIPT
+is($error->line, 2, "...has right line number")
   or diag Dumper $error;
+is($error->error->{foo},"bar", "...has values");
+
+$error = error_check { safari_js <<'ENDOFJAVASCRIPT'; } "CustomError", "object error again";
+throw {'foo':'bar','sourceID':'fish'};
+ENDOFJAVASCRIPT
+is($error->line, 1, "...has right line number");
+is($error->expressionBeginOffset, 0, "...has right begin offset");
+is($error->expressionEndOffset, 37, "...has end offset");
+
+
 
 $error = error_check {
   safari_js "++++";
 } "SyntaxError","invalid js";
-is($error,"Parse error");
+is($error,"Parse error", "...is a parse error");
 
+# this checks our eval isn't easily broken by bad syntax
 $error = error_check {
   safari_js "{";
 } "SyntaxError","stray }";
-is($error,"Parse error");
+is($error,"Parse error", "...is also a parse error");
 
 $error = error_check {
   safari_js "return new Array(-1)";
 } "RangeError", "browser thrown error that isn't a syntax error";
-is($error,"Array size is not a small enough positive integer.");
+is($error,"Array size is not a small enough positive integer.","...has right error message");

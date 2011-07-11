@@ -122,13 +122,27 @@ The line number the error occured on.
 This is only set for browser raised errors
 or if you throw an exception object.  Throwing a string will not 
 
+=item expressionBeginOffset
+
+The index of the first character of your source code that threw
+the exception object.
+
+This will only be set if you manually throw an exception object
+(and only an object, not a string.)
+
+=item expressionEndOffset
+
+The index of the last character of your source code that threw
+the exception object.
+
+This will only be set if you manually throw an exception object
+(and only an object, not a string.)
+
 =item sourceId
 
 The unique identifier for the originating source of the error.
 
 (The odd case for this accessor matches the odd case that Safari itself uses)
-
-=item 
 
 =back
 
@@ -142,7 +156,7 @@ The stringiftication of this error.
 
 This method is automatically called if you use this object in a string context.
 
-=cut
+=back
 
 =head1 AUTHOR
 
