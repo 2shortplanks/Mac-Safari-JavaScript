@@ -232,7 +232,7 @@ Some pages (e.g. http://developer.apple.com/) cause array stringifcation to brea
 
 =head1 SEE ALSO
 
-L<Mac::Applescript>, L<Mac::Safari::JavaScript::Exception>
+L<Mac::AppleScript>, L<Mac::Safari::JavaScript::Exception>
 
 =cut
 
