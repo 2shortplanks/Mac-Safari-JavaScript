@@ -23,7 +23,7 @@ Mac::Safari::JavaScript - Run JavaScript in Safari on Mac OS X
 
 =head1 SYNOPSIS
 
-  use Mac::Safarai::JavaScript qw(safari_js);
+  use Mac::Safari::JavaScript qw(safari_js);
 
   # do an alert
   safari_js 'alert("Hello Safari User")';
