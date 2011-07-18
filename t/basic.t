@@ -3,10 +3,21 @@
 use strict;
 use warnings;
 
-use Test::More tests => 36;
+use Test::More tests => 44;
 use Mac::Safari::JavaScript qw(safari_js);
 use Scalar::Util qw(blessed);
 use Data::Dumper;
+
+# force the browser to open in a sane enviroment
+# where no-one has redefined anything that Safari can't
+# cope with
+use Mac::AppleScript qw(RunAppleScript);
+RunAppleScript(<<'APPLESCRIPT');
+tell application "Safari"
+    make new document at end of documents
+    set url of document 1 to "about:blank"
+end tell
+APPLESCRIPT
 
 ########################################################################
 # return values
@@ -76,14 +87,48 @@ is_deeply [safari_js "return [number,hash,array, truth,falsehood,nully]",
   undef,
 ]], "round trip";
 
+########################################################################
+# Bad calling
+########################################################################
+
 eval { 
   safari_js "return true;", "uneven"
 };
 like ($@, qr/Uneven number of parameters passed to safari_js/, "Uneven number of parameters");
 
+eval {
+  safari_js "return true;", foo => "bar", foo => "buz";
+};
+like ($@, qr/Duplicate parameter 'foo' passed twice to safari_js/, "Duplicate parameters");
+
+########################################################################
+# totally unexpected error 
 ########################################################################
 
+eval {
+  # simulate returning something totally missing anything useful and us dealing with it
+  no warnings;
+  local *{Mac::Safari::JavaScript::RunAppleScript} = sub { return "{}" };
+  safari_js "Simulate totally unexpected error from the brower";
+};
+like($@, qr/Unexpected error returned when trying to communicate with Safari/, "unexpected works");
+
+eval {
+  # simulate returning something not JSON and us dealing with it
+  # supress all warnings globally, because this will otherwise cause noise in the tests
+  # as JSON::XS gets passed junk
+  no warnings;
+  local $SIG{__WARN__} = sub {};
+  local *{Mac::Safari::JavaScript::RunAppleScript} = sub { return undef };
+  safari_js "Simulate totally unexpected error from the brower";
+};
+like($@, qr/Unexpected error returned when trying to communicate with Safari/, "unexpected works");
+
+
+########################################################################
 # testing exceptions
+########################################################################
+
 sub error_check (&$$) {
   local $Test::Builder::Level = $Test::Builder::Level + 1;
   my $uboat = shift;
@@ -107,6 +152,7 @@ $error = error_check {
   safari_js "throw 'Bang'";
 } "CustomError", "string error";
 is($error, "Bang","...stringifies to that error");
+is($error->message,undef, "...message is however undef");
 
 $error = error_check {
   safari_js "throw ''";
@@ -128,13 +174,16 @@ ENDOFJAVASCRIPT
 is($error->line, 1, "...has right line number");
 is($error->expressionBeginOffset, 0, "...has right begin offset");
 is($error->expressionEndOffset, 37, "...has end offset");
-
+isnt($error->sourceId,'fish', "...has new sourceID (1/2)");
+ok(length($error->sourceId), "...has new sourceID (2/2)");
+is($error->message, undef,"...has undefined message");
 
 
 $error = error_check {
   safari_js "++++";
 } "SyntaxError","invalid js";
 is($error,"Parse error", "...is a parse error");
+is($error->message,"Parse error", "...message is also a parse error");
 
 # this checks our eval isn't easily broken by bad syntax
 $error = error_check {

@@ -5,6 +5,8 @@ Revision history for perl module Mac::Safari::JavaScript
   - Re-release with fixed manifest and missing inc file (double oops with sprinkles on top)
   - Fixed minor pod typo
   - Thanks to Ranguard (Leo Lapworth) for identifying these issues
+  - Improved test coverage (Now 100% across the board)
+  - Forced safari to open 'about:blank' before running the tests in order to ensure crazy JS on random pages do not break tests.
 
 1.02 2011-07-12
 

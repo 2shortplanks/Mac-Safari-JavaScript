@@ -8,7 +8,7 @@ use strict;
 use warnings;
 
 use Mac::AppleScript qw(RunAppleScript);
-use JSON::XS qw(decode_json);
+use JSON::XS;
 use Encode qw(encode decode);
 use Carp qw(croak);
 
@@ -199,7 +199,10 @@ ENDOFAPPLESCRIPT
   $json =~ s/\\\\/\\/gx;
 
   # and decode this from json
-  my $ds = $coder->decode($json);
+  my $ds = eval {
+    $coder->decode($json);
+  };
+  if ($@) { croak("Unexpected error returned when trying to communicate with Safari"); }
 
   return undef
     if exists $ds->{undefined};
@@ -209,7 +212,7 @@ ENDOFAPPLESCRIPT
     if exists $ds->{result};
   croak(Mac::Safari::JavaScript::Exception->new(%{ $ds }))
     if exists $ds->{error};
-  croak("Unexpected error");
+  croak("Unexpected error returned when trying to communicate with Safari");
 }
 push @EXPORT_OK, "safari_js";
 
