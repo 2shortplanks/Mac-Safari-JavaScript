@@ -1,6 +1,12 @@
 Revision history for perl module Mac::Safari::JavaScript
 
-1.01 2011-07-12
+1.03 2011-07-18
+
+  - Re-release with fixed manifest and missing inc file (double oops with sprinkles on top)
+  - Fixed minor pod typo
+  - Thanks to Ranguard (Leo Lapworth) for identifying these issues
+
+1.02 2011-07-12
 
   - Re-release with fixed manifest and missing module (oooops)
 
