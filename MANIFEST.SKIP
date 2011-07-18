@@ -6,7 +6,6 @@
 \.tar\.gz$
 ~$
 ^mess/
-^inc/
 ^tmp/
 ^testdata/
 ^blib/
