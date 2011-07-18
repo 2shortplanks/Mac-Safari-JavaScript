@@ -9,6 +9,6 @@ requires       'Mac::AppleScript' => 0.04;
 requires       'JSON::XS'         => 2.3;
 
 license 'perl';
-githubmeta;
+#githubmeta;
 
 WriteAll;
