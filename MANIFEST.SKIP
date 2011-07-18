@@ -14,4 +14,5 @@
 ^Build$
 ^pm_to_blib$
 ^_build/.*
+^cover_db.*
 ~$
