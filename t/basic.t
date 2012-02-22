@@ -172,24 +172,32 @@ $error = error_check { safari_js <<'ENDOFJAVASCRIPT'; } "CustomError", "object e
 throw {'foo':'bar','sourceID':'fish'};
 ENDOFJAVASCRIPT
 is($error->line, 1, "...has right line number");
-is($error->expressionBeginOffset, 0, "...has right begin offset");
-is($error->expressionEndOffset, 37, "...has end offset");
+SKIP: {
+  skip "No expressionBeginOffset set", 1 unless defined $error->expressionBeginOffset;
+  is($error->expressionBeginOffset, 0, "...has right begin offset");
+}
+SKIP: {
+  skip "No expressionEndOffset set", 1 unless defined $error->expressionEndOffset;
+  is($error->expressionEndOffset, 37, "...has end offset");
+}
 isnt($error->sourceId,'fish', "...has new sourceID (1/2)");
 ok(length($error->sourceId), "...has new sourceID (2/2)");
 is($error->message, undef,"...has undefined message");
 
+# note that different versions of Safari give different errors
+# so we have regexs in the test.
 
 $error = error_check {
   safari_js "++++";
 } "SyntaxError","invalid js";
-is($error,"Parse error", "...is a parse error");
-is($error->message,"Parse error", "...message is also a parse error");
+like($error,q!/\A(?:Parse error|Unexpected token ';')\z/!, "...message is also a parse error");
+like($error->message,q!/\A(?:Parse error|Unexpected token ';')\z/!, "...message is also a parse error");
 
 # this checks our eval isn't easily broken by bad syntax
 $error = error_check {
   safari_js "{";
 } "SyntaxError","stray }";
-is($error,"Parse error", "...is also a parse error");
+like($error,q!/\A(?:Parse error|Unexpected token '\)')\z/!, "...is also a parse error");
 
 $error = error_check {
   safari_js "return new Array(-1)";

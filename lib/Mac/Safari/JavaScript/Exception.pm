@@ -6,7 +6,7 @@ use 5.008;
 use strict;
 use warnings;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 # overload stringification, but also overload boolean evalulation so
 # if the string form of this exception is the empty string, this still
@@ -121,19 +121,21 @@ or if you throw an exception object.  Throwing a string will not
 
 =item expressionBeginOffset
 
+This value is not avalble on modern Safari (since Version 5.1.3
+(7534.53.10)).  This will only be set if you manually throw an
+exception object (and only an object, not a string.) 
+
 The index of the first character of your source code that threw
 the exception object.
 
-This will only be set if you manually throw an exception object
-(and only an object, not a string.)
-
 =item expressionEndOffset
+
+This value is not avalble on modern Safari (since Version 5.1.3
+(7534.53.10)).  This will only be set if you manually throw an
+exception object (and only an object, not a string.) 
 
 The index of the last character of your source code that threw
 the exception object.
-
-This will only be set if you manually throw an exception object
-(and only an object, not a string.)
 
 =item sourceId
 

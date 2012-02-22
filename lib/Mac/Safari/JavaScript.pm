@@ -15,7 +15,7 @@ use Carp qw(croak);
 use Mac::Safari::JavaScript::Exception;
 
 our @EXPORT_OK;
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 =head1 NAME
 
@@ -162,7 +162,7 @@ sub safari_js($;@) {
   #    this and return the string "null"
 
   $javascript = <<"ENDOFJAVASCRIPT";
-try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':(function(){var r={error:e,name:'CustomError'};var v=['name',"line","expressionBeginOffset","expressionEndOffset","message","sourceId","sourceURL"];for(var i=0;i<v.length;i++)if(e[v[i]]!=undefined)r[v[i]]=e[v[i]];if(r.hasOwnProperty("expressionEndOffset")) r.expressionEndOffset-=28;if(r.hasOwnProperty("expressionBeginOffset")) r.expressionBeginOffset-=28;return JSON.stringify(r);})(); }
+try{var result=eval("JSON.stringify((function($args){ $javascript;throw'NothingReturned'})($values));");(result===undefined)?'{"undefined":1}':'{"result":'+result+'}';}catch(e){ (e == "NothingReturned")?'{"noresult":1}':(function(){var r={error:e,name:'CustomError'};var v=['name',"line","expressionBeginOffset","expressionEndOffset","message","sourceId","sourceURL"];console.log(e);for(var i=0;i<v.length;i++)if(e[v[i]]!=undefined)r[v[i]]=e[v[i]];if(r.hasOwnProperty("expressionEndOffset")) r.expressionEndOffset-=28;if(r.hasOwnProperty("expressionBeginOffset")) r.expressionBeginOffset-=28;return JSON.stringify(r);})(); }
 ENDOFJAVASCRIPT
 
   # escape the string escapes again as we're going to pass
